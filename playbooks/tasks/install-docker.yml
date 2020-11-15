@@ -1,0 +1,4 @@
+---
+- name: execute shell
+  script: ../files/docker_install.sh
+

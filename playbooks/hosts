@@ -1,0 +1,5 @@
+[kubeadm-master]
+192.168.37.60  
+
+[kubeadm-nodes]
+192.168.37.61

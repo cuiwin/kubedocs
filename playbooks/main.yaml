@@ -1,0 +1,13 @@
+---
+- hosts: "{{hosts}}"
+  vars:
+  tasks:
+
+  - name: check docker install
+    shell: which docker  && echo 1 || echo 0
+    register: is_docker
+
+  - name: include install-docker.yml
+    include_tasks: tasks/install-docker.yml
+    when:
+     - is_docker.stdout == "0"
