@@ -1,13 +1,66 @@
 ---
-- hosts: "{{hosts}}"
+- hosts: all
   vars:
+    kubeadm_version: 1.16.15-00
   tasks:
-
   - name: check docker install
-    shell: which docker  && echo 1 || echo 0
+    shell: "which docker &> /dev/null && echo 1 || echo 0"
     register: is_docker
+
+  - debug: var=is_docker.stdout verbosity=0
 
   - name: include install-docker.yml
     include_tasks: tasks/install-docker.yml
     when:
-     - is_docker.stdout == "0"
+      - is_docker.stdout == "0"
+
+  - name: check kubeadm install
+    shell: kubeadm version &> /dev/null && echo 1 || echo 0
+    register: is_kubeadm
+
+  - debug: var=is_kubeadm.stdout verbosity=0
+
+  - name: include install-kubeadm.yml
+    include_tasks: tasks/install-kubeadm.yml
+    when:
+      - is_kubeadm.stdout == "0"
+
+- hosts: kubeadm-master
+  vars:
+    kubeadm_version: 1.16.15
+  tasks:
+
+  - name: check images
+    shell: docker images | grep -q kube-apiserver1 && echo 1 || echo 0
+    register: is_kube_images
+  - debug: var=is_kube_images.stdout verbosity=0
+  - block:
+    - name: get  kubeadm config images list
+      shell: kubeadm config images list --kubernetes-version {{kubeadm_version}}
+      register: kubeadm_images
+
+    - debug: var=kubeadm_images.stdout_lines verbosity=0
+
+    - name: save images
+      shell: echo "{{item}}" >> /tmp/images.list
+      with_items: "{{kubeadm_images.stdout_lines}}"
+
+    - name: update images
+      shell: |
+        sed -i 's#k8s.gcr.io#registry.cn-hangzhou.aliyuncs.com/google_containers#g'  /tmp/images.list
+
+    - name: cat /tmp/images.list
+      shell: cat /tmp/images.list | sort -n | uniq
+      register: images
+
+    - debug: var=images.stdout_lines verbosity=0
+
+    - name: docker pull images
+      shell: docker pull "{{item}}"
+      with_items: "{{images.stdout_lines}}"
+    when:
+      - is_kubeadm.stdout == "0"
+
+
+
+  
