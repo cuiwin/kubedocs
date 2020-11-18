@@ -28,10 +28,11 @@
 - hosts: kubeadm-master
   vars:
     kubeadm_version: 1.16.15
+    service_dns_domain: cuiwin.local
   tasks:
 
   - name: check images
-    shell: docker images | grep -q kube-apiserver1 && echo 1 || echo 0
+    shell: docker images | grep -q kube-apiserver && echo 1 || echo 0
     register: is_kube_images
   - debug: var=is_kube_images.stdout verbosity=0
   - block:
@@ -59,7 +60,42 @@
       shell: docker pull "{{item}}"
       with_items: "{{images.stdout_lines}}"
     when:
-      - is_kubeadm.stdout == "0"
+      - is_kube_images.stdout == "0"
+
+  - name: Check if kubeadm has already run
+    stat:
+      path: "/etc/kubernetes/pki/ca.key"
+    register: kubeadm_ca
+
+  - name: kubeadm init
+    shell: |
+      kubeadm  init \
+      --apiserver-advertise-address={{ inventory_hostname }} \
+      --apiserver-bind-port=6443 \
+      --kubernetes-version={{kubeadm_version}} \
+      --pod-network-cidr=10.10.0.0/16 \
+      --service-cidr=10.20.0.0/16 \
+      --service-dns-domain={{service_dns_domain}} \
+      --image-repository=registry.cn-hangzhou.aliyuncs.com/google_containers \
+      --ignore-preflight-errors=swap
+    when: not kubeadm_ca.stat.exists
+    run_once: yes
+    register: init_cluster
+  
+  - name: Create Kubernetes config directory
+    file:
+      path: ".kube/"
+      state: directory
+
+  - name: Copy admin.conf to Home directory
+    when: init_cluster is succeeded
+    copy:
+      src: "/etc/kubernetes/admin.conf"
+      dest: ".kube/config"
+      owner: "{{ ansible_user | default(ansible_user_id) }}"
+      group: "{{ ansible_user | default(ansible_user_id) }}"
+      mode: 0755
+      remote_src: true
 
 
 

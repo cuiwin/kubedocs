@@ -1,0 +1,6 @@
+---
+- hosts: all
+  vars:
+  tasks:
+  - name: reset cluster
+    shell: kubeadm init 
