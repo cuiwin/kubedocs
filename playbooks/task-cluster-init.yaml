@@ -1,7 +1,7 @@
 ---
 - hosts: all
-  vars:
-    kubeadm_version: 1.16.15-00
+  vars_files:
+    - vars/main.yml
   tasks:
   - name: check docker install
     shell: "which docker &> /dev/null && echo 1 || echo 0"
@@ -26,11 +26,9 @@
       - is_kubeadm.stdout == "0"
 
 - hosts: kubeadm-master
-  vars:
-    kubeadm_version: 1.16.15
-    service_dns_domain: cuiwin.local
+  vars_files:
+    - vars/main.yml
   tasks:
-
   - name: check images
     shell: docker images | grep -q kube-apiserver && echo 1 || echo 0
     register: is_kube_images
@@ -73,8 +71,8 @@
       --apiserver-advertise-address={{ inventory_hostname }} \
       --apiserver-bind-port=6443 \
       --kubernetes-version={{kubeadm_version}} \
-      --pod-network-cidr=10.10.0.0/16 \
-      --service-cidr=10.20.0.0/16 \
+      --pod-network-cidr={{pod_network_cidr}} \
+      --service-cidr={{service_cidr}} \
       --service-dns-domain={{service_dns_domain}} \
       --image-repository=registry.cn-hangzhou.aliyuncs.com/google_containers \
       --ignore-preflight-errors=swap
@@ -96,6 +94,24 @@
       group: "{{ ansible_user | default(ansible_user_id) }}"
       mode: 0755
       remote_src: true
+
+  # network
+
+  - name: Create Kubernetes addon directory
+    file:
+      path: "{{ network_dir }}"
+      state: directory
+
+  - name: get flannel.yml 
+    template: 
+      src: templates/flannel.yml.j2
+      dest: "{{network_dir}}/flannel.yml"
+
+  - name: "Create {{ network }} network daemonset"
+    shell: kubectl apply  -f {{ network_dir }}/
+    run_once: true
+
+  
 
 
 

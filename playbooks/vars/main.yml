@@ -1,0 +1,16 @@
+
+kubeadm_install_version: 1.16.15-00
+kubeadm_version: 1.16.15
+service_dns_domain: cuiwin.local
+
+pod_network_cidr: 10.10.0.0/16
+service_cidr: 10.20.0.0/16
+
+network: flannel 
+
+network_dir: /etc/kubernetes/network
+
+network_interface: ''
+
+flannel_cni_opts: "--iface={{ network_interface }}"
+#flannel_cni_opts: "--iface=eth0"
