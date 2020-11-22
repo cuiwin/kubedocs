@@ -3,4 +3,4 @@
   vars:
   tasks:
   - name: reset cluster
-    shell: kubeadm reset 
+    shell: kubeadm reset -f

@@ -79,7 +79,8 @@
     when: not kubeadm_ca.stat.exists
     run_once: yes
     register: init_cluster
-  
+  - debug: var=init_cluster verbosity=0
+
   - name: Create Kubernetes config directory
     file:
       path: ".kube/"
@@ -96,7 +97,6 @@
       remote_src: true
 
   # network
-
   - name: Create Kubernetes addon directory
     file:
       path: "{{ network_dir }}"
@@ -111,8 +111,40 @@
     shell: kubectl apply  -f {{ network_dir }}/
     run_once: true
 
+
+- hosts: kubeadm-nodes
+  vars_files:
+    - vars/main.yml
+  tasks:
+
+  - name: Check if kubelet.conf exists
+    stat:
+      path: "/etc/kubernetes/kubelet.conf"
+    register: kubelet_conf
   
+  - name: get token
+    shell: kubeadm token list | grep -v TOKEN | awk -F" "  '{print $1}'
+    delegate_to: "{{ groups['kubeadm-master'][0] }}"
+    register: str_token
+  - debug: var=str_token.stdout verbosity=0
 
-
+  - name: get ca hash
+    shell: openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'
+    delegate_to: "{{ groups['kubeadm-master'][0] }}"
+    register: ca_cert_hash
+  - debug: var=ca_cert_hash.stdout verbosity=0  
 
   
+  - name: Join to Kubernetes cluster
+    when: not kubelet_conf.stat.exists
+    shell: |
+      kubeadm join {{ groups['kubeadm-master'][0] }}:6443  --token {{ str_token.stdout }} \
+                   --discovery-token-ca-cert-hash sha256:{{ca_cert_hash.stdout}}
+                             
+  - name: check cluster
+    shell: kubectl get nodes
+    delegate_to: "{{ groups['kubeadm-master'][0] }}"
+    register: nodes_infos
+  - debug: var=nodes_infos
+    retries: 5
+    delay: 2 
