@@ -1,0 +1,15 @@
+## ubuntu14 openssl 升级 
+
+ubuntu14.04上源码安装openssl1.0.2k 
+https://www.cnblogs.com/testlife007/p/6543711.html
+
+此版本未解决
+https://www.cnblogs.com/zhang-can/articles/12752363.html
+
+优选方法
+https://blog.csdn.net/qq_38800089/article/details/89392092
+
+
+##  docker tag
+https://www.cnblogs.com/barneywill/p/10601978.html
+https://stackoverflow.com/questions/39352186/update-a-docker-image-in-registry
