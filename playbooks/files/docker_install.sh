@@ -9,9 +9,9 @@ sudo add-apt-repository "deb [arch=amd64] http://mirrors.aliyun.com/docker-ce/li
 # Step 4: 更新并安装 Docker-CE
 sudo apt-get -y update
 
-apt-cache madison docker-ce docker-ce-cli
+apt-cache madison docker-ce docker-ce-cli 
 
-sudo apt-get -y install docker-ce=5:18.09.9~3-0~ubuntu-bionic  docker-ce-cli=5:18.09.9~3-0~ubuntu-bionic
+sudo apt-get -y install docker-ce=5:18.09.9~3-0~ubuntu-bionic  docker-ce-cli=5:18.09.9~3-0~ubuntu-bionic containerd.io=1.3.7-1
 
 docker version 
 
